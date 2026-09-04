@@ -1,0 +1,6 @@
+{
+  "name": "SafeZone",
+  "description": "An advanced unblocked games and entertainment hub featuring games, movies, stealth search, and tab cloak settings.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
