@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { AppSettings, CloakPreset } from '../types';
+import { AppSettings, CloakPreset, ThemeType, EffectType } from '../types';
 import { CLOAK_PRESETS, openAboutBlank } from '../utils/cloakPresets';
+import { THEME_PRESETS } from '../utils/themePresets';
 import { playSound } from '../utils/audio';
 import {
   Shield,
@@ -9,8 +10,15 @@ import {
   VolumeX,
   ExternalLink,
   Check,
-  Sliders,
-  Trash2
+  Palette,
+  Sparkles,
+  CloudSnow,
+  CloudRain,
+  Ban,
+  Trash2,
+  GraduationCap,
+  Calculator,
+  Key
 } from 'lucide-react';
 
 interface SettingsTabProps {
@@ -18,21 +26,46 @@ interface SettingsTabProps {
   onUpdateSettings: (newSettings: Partial<AppSettings>) => void;
   onResetAllData: () => void;
   onTriggerDecoy: () => void;
+  onLockEdu?: () => void;
 }
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({
   settings,
   onUpdateSettings,
   onResetAllData,
-  onTriggerDecoy
+  onTriggerDecoy,
+  onLockEdu
 }) => {
   const [customTitleInput, setCustomTitleInput] = useState(settings.customTitle);
   const [customFaviconInput, setCustomFaviconInput] = useState(settings.customFavicon);
   const [panicUrlInput, setPanicUrlInput] = useState(settings.panicUrl);
+  const [passcodeInput, setPasscodeInput] = useState(settings.calculatorPasscode || '55555');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const presetKeys = Object.keys(CLOAK_PRESETS) as CloakPreset[];
   const panicKeyOptions = [']', '[', '\\', '`', '~', 'Escape', 'p', 'x'];
+
+  const themeList: ThemeType[] = ['cyber', 'galaxy', 'night', 'dark-ops'];
+  const effectList: { id: EffectType; name: string; desc: string; icon: React.ReactNode }[] = [
+    {
+      id: 'none',
+      name: 'None (Clean)',
+      desc: 'Standard minimal canvas without active atmospheric particles',
+      icon: <Ban className="w-5 h-5 text-slate-400" />
+    },
+    {
+      id: 'snow',
+      name: 'Winter Snow',
+      desc: 'Gentle, drifting 60fps snow particles with natural wind turbulence',
+      icon: <CloudSnow className="w-5 h-5 text-cyan-300" />
+    },
+    {
+      id: 'rain',
+      name: 'Atmospheric Rain',
+      desc: 'Cinematic angled raindrops with ground splash ripples and motion blur',
+      icon: <CloudRain className="w-5 h-5 text-sky-400" />
+    }
+  ];
 
   const handleApplyPreset = (preset: CloakPreset) => {
     playSound('click', settings.soundEnabled);
@@ -43,6 +76,18 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     });
     setCustomTitleInput('');
     setCustomFaviconInput('');
+    flashSuccess();
+  };
+
+  const handleSelectTheme = (newTheme: ThemeType) => {
+    playSound('click', settings.soundEnabled);
+    onUpdateSettings({ theme: newTheme });
+    flashSuccess();
+  };
+
+  const handleSelectEffect = (newEffect: EffectType) => {
+    playSound('click', settings.soundEnabled);
+    onUpdateSettings({ effect: newEffect });
     flashSuccess();
   };
 
@@ -66,6 +111,20 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     flashSuccess();
   };
 
+  const handleSaveEduPasscode = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = passcodeInput.trim();
+    if (clean.length !== 5) {
+      alert('Passcode must be exactly 5 characters (letters or numbers)');
+      return;
+    }
+    playSound('score', settings.soundEnabled);
+    onUpdateSettings({
+      calculatorPasscode: clean
+    });
+    flashSuccess();
+  };
+
   const flashSuccess = () => {
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
@@ -77,7 +136,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">Vault Settings</h1>
-          <p className="text-slate-400 mt-1">Configure tab cloaking masks, panic hotkeys, audio synthesizer, and stealth privacy</p>
+          <p className="text-slate-400 mt-1">Configure themes, weather effects, tab cloaking masks, and panic hotkeys</p>
         </div>
 
         {saveSuccess && (
@@ -87,7 +146,218 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         )}
       </header>
 
-      {/* 1. Tab Cloaking Presets */}
+      {/* 0. Educational Camouflage & Calculator Passcode */}
+      <div className="bg-[#0a0c16] p-6 sm:p-8 rounded-2xl border border-indigo-500/30 shadow-[0_0_30px_rgba(99,102,241,0.1)] space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-2 border border-indigo-500/30">
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>Full Site Camouflage</span>
+            </div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Calculator className="w-5 h-5 text-indigo-400" /> Educational Website & Calculator Lock
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+              When anyone visits your site link, it displays an authentic academic learning portal (Apex Learning Hub). Scrolling down to the interactive study calculator and typing <strong className="text-emerald-400 font-semibold">any 5 characters</strong> (letters, numbers, or calculator buttons) unlocks SafeZone instantly under the exact same link.
+            </p>
+          </div>
+
+          {/* Master Enable/Disable Toggle */}
+          <div className="flex items-center gap-3 shrink-0">
+            <span className="text-xs text-slate-400 font-medium">Cover Website:</span>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !settings.eduCoverEnabled;
+                playSound('click', settings.soundEnabled);
+                onUpdateSettings({ eduCoverEnabled: next });
+                flashSuccess();
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                settings.eduCoverEnabled
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                  : 'bg-white/5 border border-white/10 text-slate-400 hover:text-white'
+              }`}
+            >
+              {settings.eduCoverEnabled ? 'Active (Recommended)' : 'Disabled'}
+            </button>
+          </div>
+        </div>
+
+        {/* Passcode Configuration Form */}
+        <form onSubmit={handleSaveEduPasscode} className="p-4 sm:p-5 rounded-xl bg-[#060813] border border-white/5 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Key className="w-3.5 h-3.5 text-indigo-400" /> Secret Calculator Passcode (5 Letters or Numbers)
+              </label>
+              <p className="text-[11px] text-slate-400">
+                Type this code on the calculator screen or click its buttons to unlock. Case-insensitive.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                maxLength={5}
+                value={passcodeInput}
+                onChange={e => setPasscodeInput(e.target.value)}
+                placeholder="55555"
+                className="w-32 px-3 py-2 bg-[#0a0d1a] border border-indigo-500/40 rounded-xl text-sm font-mono text-center font-bold text-emerald-400 focus:outline-none focus:border-indigo-400 tracking-widest uppercase"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-md shadow-indigo-600/20"
+              >
+                Save Code
+              </button>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-slate-400">
+              <span className="font-semibold text-slate-300">Active Code:</span>
+              <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono font-bold border border-indigo-500/30">
+                {settings.calculatorPasscode || '55555'}
+              </span>
+              <span className="text-slate-500">•</span>
+              <span className="text-slate-400">Works with physical keyboard or on-screen calculator buttons</span>
+            </div>
+
+            {onLockEdu && (
+              <button
+                type="button"
+                onClick={onLockEdu}
+                className="px-3.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <GraduationCap className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Test / Lock to Educational Portal Now</span>
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* 1. Theme Selection */}
+      <div className="bg-[#0a0c16] p-6 sm:p-8 rounded-2xl border border-white/5 shadow-xl space-y-6">
+        <div>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Palette className="w-5 h-5 text-cyan-400" /> Visual Themes
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Choose your preferred aesthetic style. Each theme dynamically updates the ambient lighting, borders, accents, and visual hierarchy.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {themeList.map(themeKey => {
+            const meta = THEME_PRESETS[themeKey];
+            const isSelected = settings.theme === themeKey;
+
+            return (
+              <button
+                key={themeKey}
+                onClick={() => handleSelectTheme(themeKey)}
+                className={`p-4 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer relative overflow-hidden group ${
+                  isSelected
+                    ? 'bg-white/[0.08] border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.25)]'
+                    : 'bg-[#05060b] hover:bg-white/[0.04] border-white/10'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+                      {meta.name}
+                      {themeKey === 'cyber' && (
+                        <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                          Popular
+                        </span>
+                      )}
+                    </span>
+                    {isSelected ? (
+                      <span className="w-5 h-5 rounded-full bg-cyan-500 text-black flex items-center justify-center text-xs font-bold shadow-[0_0_10px_rgba(6,182,212,0.6)]">
+                        <Check className="w-3.5 h-3.5" />
+                      </span>
+                    ) : (
+                      <span className="w-5 h-5 rounded-full border border-white/20 group-hover:border-white/40" />
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-slate-400 mb-4 leading-relaxed line-clamp-2">
+                    {meta.tagline}
+                  </p>
+                </div>
+
+                {/* Color Palette Swatches */}
+                <div className="flex items-center gap-1.5 pt-2 border-t border-white/5">
+                  {meta.sampleHex.map((hex, i) => (
+                    <div
+                      key={i}
+                      className="w-5 h-5 rounded-md border border-white/10 shrink-0 shadow-inner"
+                      style={{ backgroundColor: hex }}
+                      title={hex}
+                    />
+                  ))}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 2. Atmospheric Particle Effects */}
+      <div className="bg-[#0a0c16] p-6 sm:p-8 rounded-2xl border border-white/5 shadow-xl space-y-6">
+        <div>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-sky-400" /> Atmospheric Canvas Effects
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Immersive 60fps GPU-accelerated background weather effects that float behind the UI without impacting game performance.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {effectList.map(effectItem => {
+            const isSelected = settings.effect === effectItem.id;
+
+            return (
+              <button
+                key={effectItem.id}
+                onClick={() => handleSelectEffect(effectItem.id)}
+                className={`p-5 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer ${
+                  isSelected
+                    ? 'bg-sky-500/10 border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.2)]'
+                    : 'bg-[#05060b] hover:bg-white/[0.04] border-white/10'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-2.5 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center">
+                      {effectItem.icon}
+                    </div>
+                    {isSelected && (
+                      <span className="w-5 h-5 rounded-full bg-sky-500 text-black flex items-center justify-center text-xs font-bold shadow-[0_0_10px_rgba(56,189,248,0.6)]">
+                        <Check className="w-3.5 h-3.5" />
+                      </span>
+                    )}
+                  </div>
+
+                  <h4 className="font-bold text-sm text-white mb-1">{effectItem.name}</h4>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">{effectItem.desc}</p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px]">
+                  <span className={isSelected ? 'text-sky-400 font-bold' : 'text-slate-500'}>
+                    {isSelected ? 'Active Effect' : 'Click to Activate'}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. Tab Cloaking Presets */}
       <div className="bg-[#0a0c16] p-6 sm:p-8 rounded-2xl border border-white/5 shadow-xl space-y-6">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -163,7 +433,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <div className="sm:col-span-2 flex justify-end">
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-[0_0_15px_rgba(79,70,229,0.3)]"
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl cursor-pointer transition shadow-[0_0_15px_rgba(99,102,241,0.3)]"
               >
                 Apply Custom Cloak
               </button>
@@ -172,7 +442,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
       </div>
 
-      {/* 2. Panic Key & Emergency Disguise */}
+      {/* 4. Panic Key & Emergency Disguise */}
       <div className="bg-[#0a0c16] p-6 sm:p-8 rounded-2xl border border-white/5 shadow-xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>

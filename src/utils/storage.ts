@@ -1,10 +1,8 @@
-import { AppSettings, GameItem, MovieItem } from '../types';
+import { AppSettings, GameItem } from '../types';
 import { INITIAL_GAMES } from '../data/gamesData';
-import { INITIAL_MOVIES } from '../data/moviesData';
 
 const SETTINGS_KEY = 'safezone_settings_v1';
 const CUSTOM_GAMES_KEY = 'safezone_custom_games_v1';
-const CUSTOM_MOVIES_KEY = 'safezone_custom_movies_v1';
 const HIGH_SCORES_KEY = 'safezone_highscores_v1';
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -14,11 +12,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
   panicKey: ']',
   panicUrl: 'https://classroom.google.com',
   panicAction: 'decoy',
-  theme: 'dark-ops',
+  theme: 'cyber',
+  effect: 'none',
   soundEnabled: true,
-  recentGames: ['subway_surfers', 'escape_road', 'retro_bowl', 'geometry_dash_lite'],
-  favoriteGames: ['subway_surfers', 'escape_road', 'geometry_dash_lite'],
-  favoriteMovies: ['big_buck_bunny']
+  recentGames: ['subway_surfers', 'monkey_mart', 'stickman_hook', 'drive_mad'],
+  favoriteGames: ['subway_surfers', 'monkey_mart', 'stickman_hook'],
+  eduCoverEnabled: true,
+  calculatorPasscode: '55555'
 };
 
 export function getStoredSettings(): AppSettings {
@@ -26,7 +26,21 @@ export function getStoredSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    const favoriteGames = Array.isArray(parsed.favoriteGames)
+      ? parsed.favoriteGames.filter((id: string) => id !== 'geometry_dash_lite')
+      : DEFAULT_SETTINGS.favoriteGames;
+    const recentGames = Array.isArray(parsed.recentGames)
+      ? parsed.recentGames.filter((id: string) => id !== 'geometry_dash_lite')
+      : DEFAULT_SETTINGS.recentGames;
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsed,
+      favoriteGames,
+      recentGames,
+      eduCoverEnabled: parsed.eduCoverEnabled !== undefined ? parsed.eduCoverEnabled : DEFAULT_SETTINGS.eduCoverEnabled,
+      calculatorPasscode: parsed.calculatorPasscode || DEFAULT_SETTINGS.calculatorPasscode
+    };
   } catch {
     return DEFAULT_SETTINGS;
   }
@@ -73,27 +87,6 @@ export function deleteCustomGame(id: string): void {
   }
 }
 
-export function getCustomMovies(): MovieItem[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(CUSTOM_MOVIES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function saveCustomMovie(movie: MovieItem): void {
-  if (typeof window === 'undefined') return;
-  try {
-    const current = getCustomMovies();
-    const updated = [movie, ...current.filter(m => m.id !== movie.id)];
-    localStorage.setItem(CUSTOM_MOVIES_KEY, JSON.stringify(updated));
-  } catch {
-    // ignore
-  }
-}
-
 export function getHighScore(gameId: string): number {
   if (typeof window === 'undefined') return 0;
   try {
@@ -128,7 +121,6 @@ export function resetAllData(): void {
   try {
     localStorage.removeItem(SETTINGS_KEY);
     localStorage.removeItem(CUSTOM_GAMES_KEY);
-    localStorage.removeItem(CUSTOM_MOVIES_KEY);
     localStorage.removeItem(HIGH_SCORES_KEY);
   } catch {
     // ignore

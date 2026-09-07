@@ -158,6 +158,7 @@ export const GamesTab: React.FC<GamesTabProps> = ({
             className="iframe-default w-full h-full border-0"
             allowFullScreen
             allow="fullscreen; gamepad; autoplay; screen-wake-lock"
+            {...(activeGame.sandbox ? { sandbox: activeGame.sandbox } : {})}
           />
         </div>
       );
@@ -244,6 +245,12 @@ export const GamesTab: React.FC<GamesTabProps> = ({
                   alt={game.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                   loading="lazy"
+                  referrerPolicy="no-referrer"
+                  onError={e => {
+                    // Fallback to a high-aesthetic placeholder if an external CDN encounters an issue
+                    (e.target as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80';
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition" />
 

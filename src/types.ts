@@ -1,4 +1,4 @@
-export type TabType = 'games' | 'movies' | 'search' | 'settings';
+export type TabType = 'games' | 'search' | 'settings';
 
 export type GameCategory = 'all' | 'arcade' | 'puzzle' | 'retro' | 'action' | 'casual' | 'favorites';
 
@@ -20,21 +20,9 @@ export interface GameItem {
   isCustom?: boolean;
 }
 
-export interface MovieItem {
-  id: string;
-  title: string;
-  year: number;
-  duration: string;
-  category: string;
-  poster: string;
-  description: string;
-  videoUrl?: string;
-  embedUrl?: string;
-  genre: string[];
-  isCustom?: boolean;
-}
+export type ThemeType = 'cyber' | 'galaxy' | 'night' | 'dark-ops';
 
-export type ThemeType = 'dark-ops' | 'cyberpunk' | 'matrix' | 'midnight' | 'sunset' | 'clean';
+export type EffectType = 'none' | 'snow' | 'rain';
 
 export type CloakPreset = 'none' | 'classroom' | 'drive' | 'docs' | 'canvas' | 'desmos' | 'edpuzzle' | 'khan';
 
@@ -46,8 +34,11 @@ export interface AppSettings {
   panicUrl: string;
   panicAction: 'decoy' | 'redirect';
   theme: ThemeType;
+  effect: EffectType;
   soundEnabled: boolean;
   recentGames: string[];
   favoriteGames: string[];
-  favoriteMovies: string[];
+  favoriteMovies?: string[];
+  eduCoverEnabled: boolean;
+  calculatorPasscode: string;
 }

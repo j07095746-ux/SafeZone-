@@ -97,7 +97,7 @@ export function openAboutBlank(targetUrl?: string, customTitle?: string, customF
           <style>body,html{height:100%;margin:0;padding:0;overflow:hidden;background:#000;}iframe{width:100%;height:100%;border:none;}</style>
         </head>
         <body>
-          <iframe src="${url}" allowfullscreen="true" allow="autoplay; fullscreen; gamepad; microphone; camera"></iframe>
+          <iframe src="${url}" allowfullscreen="true" allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; gamepad; microphone; camera" referrerpolicy="origin"></iframe>
         </body>
       </html>
     `);

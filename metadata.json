@@ -1,6 +1,8 @@
 {
   "name": "SafeZone",
-  "description": "An advanced unblocked games and entertainment hub featuring games, movies, stealth search, and tab cloak settings.",
+  "description": "An advanced stealth games vault camouflaged behind an educational learning website with an interactive study calculator passcode lock, unblocked arcade games, customizable themes, and tab cloaking.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
