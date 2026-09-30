@@ -245,14 +245,22 @@ export const EducationalPortal: React.FC<EducationalPortalProps> = ({
             <a href="#academic-calendar" className="hover:text-white transition">Calendar</a>
           </nav>
 
-          {/* Direct CTA to Calculator */}
-          <div className="flex items-center gap-3">
+          {/* Direct Actions to Enter or Open Calculator */}
+          <div className="flex items-center gap-2.5">
             <button
               onClick={scrollToCalculator}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-lg shadow-indigo-600/20 transition cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-semibold flex items-center gap-1.5 border border-slate-700 transition cursor-pointer"
             >
-              <Calculator className="w-4 h-4" />
-              <span>Open Calculator</span>
+              <Calculator className="w-4 h-4 text-blue-400" />
+              <span className="hidden sm:inline">Calculator</span>
+            </button>
+            <button
+              onClick={triggerUnlock}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-lg shadow-blue-600/30 transition cursor-pointer active:scale-95"
+              title="Enter Safezone Site"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Enter Safezone</span>
             </button>
           </div>
         </div>
@@ -290,15 +298,22 @@ export const EducationalPortal: React.FC<EducationalPortalProps> = ({
             {/* Quick Jump Buttons */}
             <div className="flex flex-wrap items-center gap-3">
               <button
+                onClick={triggerUnlock}
+                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-600/30 transition cursor-pointer active:scale-95"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Enter Safezone</span>
+              </button>
+              <button
                 onClick={scrollToCalculator}
                 className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs sm:text-sm font-medium flex items-center gap-2 transition cursor-pointer"
               >
-                <ArrowDown className="w-4 h-4 text-indigo-400 animate-bounce" />
+                <ArrowDown className="w-4 h-4 text-blue-400 animate-bounce" />
                 <span>Scroll Down to Student Calculator</span>
               </button>
               <div className="text-xs text-slate-400 flex items-center gap-1.5 px-3 py-2 bg-slate-950/60 rounded-xl border border-slate-800/80">
                 <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-                <span>Tip: Use the interactive calculator below for homework computations & formulas.</span>
+                <span>Tip: Type any 5 keys or use the study calculator below to enter.</span>
               </div>
             </div>
           </div>
@@ -839,7 +854,7 @@ export const EducationalPortal: React.FC<EducationalPortalProps> = ({
                 </div>
               )}
 
-              {/* Discrete Passcode Hint Tooltip */}
+              {/* Discrete Passcode Hint & Launch Tooltip */}
               <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
                 <button
                   type="button"
@@ -847,16 +862,20 @@ export const EducationalPortal: React.FC<EducationalPortalProps> = ({
                   className="flex items-center gap-1 hover:text-slate-300 transition cursor-pointer"
                 >
                   <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{showHint ? 'Hide Code Hint' : 'Need Passcode Hint?'}</span>
+                  <span>{showHint ? 'Hide Code Hint' : 'Need Code Hint?'}</span>
                 </button>
                 {showHint && (
                   <div className="font-mono text-slate-300 text-xs px-2 py-0.5 rounded bg-slate-900 border border-slate-700">
-                    Type: <span className="text-emerald-400 font-bold">Any 5 letters or numbers</span>
+                    Type: <span className="text-blue-400 font-bold">Any 5 letters or numbers</span>
                   </div>
                 )}
-                <span className="text-[11px] text-slate-500 font-mono">
-                  Any 5 Chars Unlocks
-                </span>
+                <button
+                  type="button"
+                  onClick={triggerUnlock}
+                  className="px-2.5 py-1 rounded-lg bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white font-bold text-[11px] border border-blue-500/30 transition cursor-pointer"
+                >
+                  Direct Enter &rarr;
+                </button>
               </div>
             </div>
           </div>

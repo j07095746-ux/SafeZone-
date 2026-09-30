@@ -12,7 +12,8 @@ import {
   SlidersHorizontal,
   ExternalLink,
   Flame,
-  Info
+  Info,
+  Shield
 } from 'lucide-react';
 import { TetrisGame } from './games/TetrisGame';
 import { Game2048 } from './games/Game2048';
@@ -24,7 +25,8 @@ import { DinoRunnerGame } from './games/DinoRunnerGame';
 import { MinesweeperGame } from './games/MinesweeperGame';
 import { CookieClickerGame } from './games/CookieClickerGame';
 import { ConnectFourGame } from './games/ConnectFourGame';
-import { openAboutBlank } from '../utils/cloakPresets';
+import { FNFGame } from './games/FNFGame';
+import { openAboutBlank, openStealthBlobWindow } from '../utils/cloakPresets';
 import { playSound } from '../utils/audio';
 
 interface GamesTabProps {
@@ -34,6 +36,8 @@ interface GamesTabProps {
   onAddCustomGame: (game: GameItem) => void;
   soundEnabled: boolean;
   onGamePlayScore?: (gameId: string, score: number) => void;
+  launchGameId?: string | null;
+  onClearLaunchGameId?: () => void;
 }
 
 export const GamesTab: React.FC<GamesTabProps> = ({
@@ -42,12 +46,25 @@ export const GamesTab: React.FC<GamesTabProps> = ({
   onToggleFavorite,
   onAddCustomGame,
   soundEnabled,
-  onGamePlayScore
+  onGamePlayScore,
+  launchGameId,
+  onClearLaunchGameId
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<GameCategory>('all');
   const [activeGame, setActiveGame] = useState<GameItem | null>(null);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+
+  // Auto-launch if launchGameId passed
+  React.useEffect(() => {
+    if (launchGameId) {
+      const g = games.find(item => item.id === launchGameId);
+      if (g) {
+        setActiveGame(g);
+        onClearLaunchGameId?.();
+      }
+    }
+  }, [launchGameId, games, onClearLaunchGameId]);
 
   // Custom game form
   const [customTitle, setCustomTitle] = useState('');
@@ -57,6 +74,7 @@ export const GamesTab: React.FC<GamesTabProps> = ({
 
   const categories: { id: GameCategory; label: string }[] = [
     { id: 'all', label: 'All Games' },
+    { id: 'fnf', label: '🎤 FNF' },
     { id: 'favorites', label: '⭐ Favorites' },
     { id: 'retro', label: 'Retro' },
     { id: 'arcade', label: 'Arcade' },
@@ -75,6 +93,7 @@ export const GamesTab: React.FC<GamesTabProps> = ({
 
       if (selectedCategory === 'all') return true;
       if (selectedCategory === 'favorites') return favoriteGames.includes(game.id);
+      if (selectedCategory === 'fnf') return game.id.includes('fnf') || game.id.includes('friday_night_funkin');
       return game.category === selectedCategory;
     });
   }, [games, searchQuery, selectedCategory, favoriteGames]);
@@ -140,11 +159,13 @@ export const GamesTab: React.FC<GamesTabProps> = ({
           return <CookieClickerGame soundEnabled={soundEnabled} onScoreUpdate={s => onGamePlayScore?.('cookie_clicker', s)} />;
         case 'connect_four':
           return <ConnectFourGame soundEnabled={soundEnabled} onScoreUpdate={s => onGamePlayScore?.('connect_four', s)} />;
+        case 'fnf_arcade':
+          return <FNFGame soundEnabled={soundEnabled} onScoreUpdate={s => onGamePlayScore?.('fnf_arcade', s)} />;
         default:
           return <TetrisGame soundEnabled={soundEnabled} />;
       }
     } else {
-      // Embed iframe
+      // Embed iframe with unblocked sandbox permissions & no-referrer
       return (
         <div className="w-full h-[75vh] min-h-[520px] bg-black rounded-xl overflow-hidden border border-white/10 relative">
           <iframe
@@ -157,8 +178,9 @@ export const GamesTab: React.FC<GamesTabProps> = ({
             scrolling="no"
             className="iframe-default w-full h-full border-0"
             allowFullScreen
-            allow="fullscreen; gamepad; autoplay; screen-wake-lock"
-            {...(activeGame.sandbox ? { sandbox: activeGame.sandbox } : {})}
+            referrerPolicy="no-referrer"
+            allow="fullscreen; gamepad; autoplay; screen-wake-lock; encrypted-media; picture-in-picture"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock allow-downloads allow-modals"
           />
         </div>
       );
@@ -184,8 +206,8 @@ export const GamesTab: React.FC<GamesTabProps> = ({
                 onClick={() => setSelectedCategory(cat.id)}
                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition cursor-pointer ${
                   isSelected
-                    ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-bold shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-                    : 'bg-white/5 hover:bg-white/10 border border-white/10 hover:border-indigo-500/20 text-slate-300 hover:text-white'
+                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 font-bold shadow-[0_0_15px_rgba(59,130,246,0.25)]'
+                    : 'bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-500/20 text-slate-300 hover:text-white'
                 }`}
               >
                 {cat.label}
@@ -196,7 +218,7 @@ export const GamesTab: React.FC<GamesTabProps> = ({
       </header>
 
       {/* Filter & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0a0c16] p-3 rounded-2xl border border-white/5 shadow-lg">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0a0f1d] p-3 rounded-2xl border border-blue-500/15 shadow-lg">
         {/* Search */}
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -205,7 +227,7 @@ export const GamesTab: React.FC<GamesTabProps> = ({
             placeholder="Search games..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-[#05060b] rounded-xl border border-white/10 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full pl-10 pr-4 py-2 bg-[#060b17] rounded-xl border border-white/10 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-400"
           />
           {searchQuery && (
             <button
@@ -220,7 +242,7 @@ export const GamesTab: React.FC<GamesTabProps> = ({
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
           <button
             onClick={() => setIsCustomModalOpen(true)}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-[0_0_20px_rgba(79,70,229,0.3)] transition cursor-pointer"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-[0_0_20px_rgba(37,99,235,0.35)] transition cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Add Custom Game
           </button>
@@ -328,15 +350,35 @@ export const GamesTab: React.FC<GamesTabProps> = ({
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
-                  onClick={() => openAboutBlank()}
-                  className="p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 rounded-lg text-xs flex items-center gap-1 cursor-pointer"
-                  title="Open in about:blank cloaked tab"
+                  onClick={() => openAboutBlank(activeGame.embedUrl || window.location.href, activeGame.title)}
+                  className="px-2.5 py-1.5 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition shadow-sm"
+                  title="Open game in an unblocked about:blank cloaked tab (bypasses school firewalls & hides URL)"
                 >
-                  <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
-                  <span className="hidden sm:inline">About:Blank</span>
+                  <Shield className="w-3.5 h-3.5 text-cyan-300" />
+                  <span>Unblock About:Blank</span>
                 </button>
+
+                <button
+                  onClick={() => openStealthBlobWindow(activeGame.embedUrl || window.location.href, activeGame.title)}
+                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition hidden sm:flex"
+                  title="Open game in an unblocked stealth blob URL"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Stealth Blob</span>
+                </button>
+
+                {activeGame.embedUrl && (
+                  <button
+                    onClick={() => window.open(activeGame.embedUrl, '_blank', 'noopener,noreferrer')}
+                    className="p-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white rounded-lg text-xs cursor-pointer"
+                    title="Open direct game mirror link"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
                 <button
                   onClick={() => {
                     const el = document.getElementById('active-game-canvas-area');
@@ -347,9 +389,10 @@ export const GamesTab: React.FC<GamesTabProps> = ({
                 >
                   <Maximize className="w-4 h-4" />
                 </button>
+
                 <button
                   onClick={() => setActiveGame(null)}
-                  className="p-1.5 bg-white/5 hover:bg-rose-600 border border-white/10 text-slate-300 hover:text-white rounded-lg cursor-pointer transition"
+                  className="p-1.5 bg-white/5 hover:bg-blue-600 border border-white/10 text-slate-300 hover:text-white rounded-lg cursor-pointer transition"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -364,13 +407,17 @@ export const GamesTab: React.FC<GamesTabProps> = ({
               {renderActiveGameComponent()}
             </div>
 
-            {/* Game Controls & Instructions footer */}
+            {/* Game Controls & Instructions footer with Unblock Status */}
             <div className="px-5 py-3 bg-[#05060b] border-t border-white/5 text-xs text-slate-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Info className="w-4 h-4 text-indigo-400 shrink-0" />
+                <Info className="w-4 h-4 text-blue-400 shrink-0" />
                 <span>{activeGame.instructions}</span>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  UNBLOCKED
+                </span>
                 {activeGame.controls.map((ctrl, i) => (
                   <span key={i} className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-slate-300 text-[11px] font-mono">
                     {ctrl}

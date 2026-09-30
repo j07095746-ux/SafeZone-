@@ -20,6 +20,10 @@ import { playSound } from './utils/audio';
 import { Navbar } from './components/Navbar';
 import { GamesTab } from './components/GamesTab';
 import { SearchTab } from './components/SearchTab';
+import { HomeSearchScreen } from './components/HomeSearchScreen';
+import { MoviesTab } from './components/MoviesTab';
+import { MusicTab } from './components/MusicTab';
+import { ChatTab } from './components/ChatTab';
 import { SettingsTab } from './components/SettingsTab';
 import { DecoyOverlay } from './components/DecoyOverlay';
 import { BackgroundEffects } from './components/BackgroundEffects';
@@ -27,7 +31,8 @@ import { EducationalPortal } from './components/EducationalPortal';
 import { THEME_PRESETS } from './utils/themePresets';
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState<TabType>('games');
+  const [currentTab, setCurrentTab] = useState<TabType>('home');
+  const [launchGameId, setLaunchGameId] = useState<string | null>(null);
   const [settings, setSettings] = useState<AppSettings>(() => getStoredSettings());
   const [games, setGames] = useState<GameItem[]>(() => {
     const custom = getCustomGames();
@@ -35,16 +40,8 @@ export default function App() {
   });
   const [decoyActive, setDecoyActive] = useState(false);
 
-  // Educational cover lock state
-  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
-    const s = getStoredSettings();
-    if (!s.eduCoverEnabled) return true;
-    try {
-      return sessionStorage.getItem('safezone_unlocked_session') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  // Educational cover lock state: starts at false so the edu portal is always the entrance to the site
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
 
   const handleUnlock = () => {
     setIsUnlocked(true);
@@ -201,7 +198,7 @@ export default function App() {
   }
 
   return (
-    <div className={`${getThemeBackground()} text-slate-200 flex flex-col md:flex-row min-h-screen overflow-x-hidden font-sans selection:bg-cyan-500 selection:text-black transition-colors duration-500 relative`}>
+    <div className="bg-[#060b17] safezone-dot-grid text-slate-200 min-h-screen overflow-x-hidden font-sans selection:bg-blue-600 selection:text-white relative">
       {/* Dynamic Atmospheric Canvas Effect (Snow, Rain, None) */}
       <BackgroundEffects effect={settings.effect} />
 
@@ -213,7 +210,7 @@ export default function App() {
         />
       )}
 
-      {/* Primary Sidebar & Mobile Navigation */}
+      {/* Primary Safezone Browser Chrome & Left Icon Rail */}
       <Navbar
         currentTab={currentTab}
         onTabChange={tab => {
@@ -226,16 +223,26 @@ export default function App() {
         soundEnabled={settings.soundEnabled}
         onToggleSound={() => handleUpdateSettings({ soundEnabled: !settings.soundEnabled })}
         cloakPreset={settings.cloakPreset}
-        theme={settings.theme}
       />
 
-      {/* Main Content Viewport */}
-      <main className="flex-1 flex flex-col p-6 sm:p-10 gap-8 relative overflow-y-auto max-h-screen w-full">
-        {/* Immersive UI Ambient Glow Orbs */}
-        {getAmbientOrbs()}
-
+      {/* Main Content Viewport (offset for top browser bar and left rail) */}
+      <main className="pt-24 pl-16 md:pl-20 pr-4 sm:pr-8 pb-12 min-h-screen flex flex-col justify-between relative z-10">
         {/* Tab Modules */}
-        <div className="relative z-10 flex-1">
+        <div className="flex-1 w-full max-w-7xl mx-auto">
+          {(currentTab === 'home' || currentTab === 'search') && (
+            <HomeSearchScreen
+              games={games}
+              soundEnabled={settings.soundEnabled}
+              onLaunchGame={game => {
+                setLaunchGameId(game.id);
+                setCurrentTab('games');
+              }}
+              onNavigateTab={tab => setCurrentTab(tab)}
+              onOpenCustomModal={() => setCurrentTab('games')}
+              onLockEdu={handleLockEdu}
+            />
+          )}
+
           {currentTab === 'games' && (
             <GamesTab
               games={games}
@@ -244,11 +251,21 @@ export default function App() {
               onAddCustomGame={handleAddCustomGame}
               soundEnabled={settings.soundEnabled}
               onGamePlayScore={(id, score) => saveHighScore(id, score)}
+              launchGameId={launchGameId}
+              onClearLaunchGameId={() => setLaunchGameId(null)}
             />
           )}
 
-          {currentTab === 'search' && (
-            <SearchTab soundEnabled={settings.soundEnabled} />
+          {currentTab === 'movies' && (
+            <MoviesTab soundEnabled={settings.soundEnabled} />
+          )}
+
+          {currentTab === 'music' && (
+            <MusicTab soundEnabled={settings.soundEnabled} />
+          )}
+
+          {currentTab === 'chat' && (
+            <ChatTab soundEnabled={settings.soundEnabled} />
           )}
 
           {currentTab === 'settings' && (
@@ -262,23 +279,19 @@ export default function App() {
           )}
         </div>
 
-        {/* Immersive UI Status Footer */}
-        <footer className="mt-auto flex flex-col sm:flex-row items-center justify-between border-t border-white/5 pt-6 text-slate-500 text-xs sm:text-sm relative z-10 gap-3">
-          <div className="flex items-center gap-3">
-            <span>SafeZone Vault</span>
-            <span className="text-white/10">•</span>
-            <span className="capitalize text-slate-400 font-medium">{activeThemeMeta.name} Theme</span>
-            {settings.effect !== 'none' && (
-              <>
-                <span className="text-white/10">•</span>
-                <span className="capitalize text-cyan-400 font-medium">{settings.effect} Active</span>
-              </>
-            )}
+        {/* Minimal Safezone Footer with Blue Letters */}
+        <footer className="mt-12 flex flex-col sm:flex-row items-center justify-between border-t border-blue-500/15 pt-4 text-blue-300/50 text-xs gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Safezone</span>
+            <span>•</span>
+            <span>Stealth Browser &amp; Games</span>
+            <span>•</span>
+            <span className="capitalize">{settings.theme} Mode</span>
           </div>
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6 font-mono text-xs text-slate-400">
-            <div>FPS: 60</div>
-            <div>STATUS: STEALTH</div>
-            <div>VAULT: ACTIVE</div>
+          <div className="flex items-center gap-4 font-mono text-[11px]">
+            <span className="text-blue-400">60 FPS</span>
+            <span>•</span>
+            <span className="text-emerald-400">STATUS: SECURE</span>
           </div>
         </footer>
       </main>

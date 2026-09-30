@@ -18,7 +18,11 @@ import {
   Trash2,
   GraduationCap,
   Calculator,
-  Key
+  Key,
+  Download,
+  Copy,
+  Code,
+  FileCode
 } from 'lucide-react';
 
 interface SettingsTabProps {
@@ -123,6 +127,48 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       calculatorPasscode: clean
     });
     flashSuccess();
+  };
+
+  const [downloadingHtml, setDownloadingHtml] = useState(false);
+  const [copiedHtml, setCopiedHtml] = useState(false);
+
+  const handleDownloadSingleHtml = async () => {
+    setDownloadingHtml(true);
+    try {
+      const response = await fetch('/SafeZone-GoogleSites.html');
+      if (!response.ok) throw new Error('File not found');
+      const htmlText = await response.text();
+      const blob = new Blob([htmlText], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'index.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      playSound('score', settings.soundEnabled);
+    } catch (err) {
+      console.error(err);
+      window.open('/SafeZone-GoogleSites.html', '_blank');
+    } finally {
+      setDownloadingHtml(false);
+    }
+  };
+
+  const handleCopyGoogleSitesHtml = async () => {
+    try {
+      const response = await fetch('/SafeZone-GoogleSites.html');
+      if (!response.ok) throw new Error('File not found');
+      const htmlText = await response.text();
+      await navigator.clipboard.writeText(htmlText);
+      setCopiedHtml(true);
+      playSound('score', settings.soundEnabled);
+      setTimeout(() => setCopiedHtml(false), 3000);
+    } catch (err) {
+      console.error(err);
+      alert('Could not copy to clipboard automatically. Click "Download Single-File (index.html)" to save the file.');
+    }
   };
 
   const flashSuccess = () => {
@@ -236,6 +282,79 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             )}
           </div>
         </form>
+      </div>
+
+      {/* Google Sites Standalone Single-File Embed Section */}
+      <div className="bg-[#0a0c16] p-6 sm:p-8 rounded-2xl border border-emerald-500/20 shadow-xl space-y-6 relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-semibold mb-3">
+              <Code className="w-3.5 h-3.5" /> 100% Standalone Google Sites Ready
+            </div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <FileCode className="w-5 h-5 text-emerald-400" /> Single-File index.html for Google Sites
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+              This entire application (the disguised learning hub, calculator unlock, all retro arcade games, audio synthesis, weather particles, and tab cloaking) has been bundled into a <strong>single standalone HTML file</strong> with zero external JavaScript or CSS dependencies.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              onClick={handleCopyGoogleSitesHtml}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-lg ${
+                copiedHtml
+                  ? 'bg-emerald-500 text-slate-950 font-black'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/30'
+              }`}
+            >
+              {copiedHtml ? <Check className="w-4 h-4 stroke-[3]" /> : <Copy className="w-4 h-4" />}
+              <span>{copiedHtml ? 'Copied Full HTML!' : 'Copy Code for Google Sites'}</span>
+            </button>
+
+            <button
+              onClick={handleDownloadSingleHtml}
+              disabled={downloadingHtml}
+              className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border border-white/10 text-xs font-bold transition flex items-center gap-2 cursor-pointer"
+            >
+              <Download className="w-4 h-4 text-emerald-400" />
+              <span>{downloadingHtml ? 'Preparing...' : 'Download index.html'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 3-Step Google Sites Instructions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+          <div className="p-4 rounded-xl bg-[#060813] border border-white/5 space-y-1.5">
+            <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold text-xs flex items-center justify-center">
+              1
+            </div>
+            <h4 className="text-xs font-bold text-slate-200">Copy or Download</h4>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Click the green <strong>"Copy Code for Google Sites"</strong> button above to copy the raw HTML code to your clipboard.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-[#060813] border border-white/5 space-y-1.5">
+            <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold text-xs flex items-center justify-center">
+              2
+            </div>
+            <h4 className="text-xs font-bold text-slate-200">Embed in Google Sites</h4>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              In your Google Sites page editor, click <strong>Insert</strong> &rarr; <strong>Embed (&lt;/&gt;)</strong> &rarr; select the <strong>Embed Code</strong> tab.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-[#060813] border border-white/5 space-y-1.5">
+            <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-bold text-xs flex items-center justify-center">
+              3
+            </div>
+            <h4 className="text-xs font-bold text-slate-200">Paste &amp; Resize</h4>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Paste the code, click <strong>Next</strong> &rarr; <strong>Insert</strong>, and stretch the box across your page. SafeZone works completely self-contained!
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* 1. Theme Selection */}

@@ -80,6 +80,7 @@ export function openAboutBlank(targetUrl?: string, customTitle?: string, customF
   try {
     const win = window.open('about:blank', '_blank');
     if (!win) {
+      if (targetUrl) window.open(targetUrl, '_blank', 'noopener,noreferrer');
       return false;
     }
     const doc = win.document;
@@ -94,16 +95,49 @@ export function openAboutBlank(targetUrl?: string, customTitle?: string, customF
         <head>
           <title>${title}</title>
           <link rel="icon" href="${icon}" />
-          <style>body,html{height:100%;margin:0;padding:0;overflow:hidden;background:#000;}iframe{width:100%;height:100%;border:none;}</style>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <style>body,html{height:100%;margin:0;padding:0;overflow:hidden;background:#000;}iframe{width:100%;height:100%;border:none;outline:none;display:block;}</style>
         </head>
         <body>
-          <iframe src="${url}" allowfullscreen="true" allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; gamepad; microphone; camera" referrerpolicy="origin"></iframe>
+          <iframe src="${url}" allowfullscreen="true" allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; gamepad; microphone; camera; clipboard-write" referrerpolicy="no-referrer"></iframe>
         </body>
       </html>
     `);
     doc.close();
     return true;
   } catch {
+    if (targetUrl) window.open(targetUrl, '_blank', 'noopener,noreferrer');
     return false;
+  }
+}
+
+export function openStealthBlobWindow(targetUrl?: string, customTitle?: string, customFavicon?: string) {
+  try {
+    const url = targetUrl || window.location.href;
+    const title = customTitle || 'Classes - Google Classroom';
+    const icon = customFavicon || 'https://ssl.gstatic.com/classroom/favicon.png';
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html style="height:100%;margin:0;padding:0;overflow:hidden;background:#000;">
+        <head>
+          <title>${title}</title>
+          <link rel="icon" href="${icon}" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <style>body,html{height:100%;margin:0;padding:0;overflow:hidden;background:#000;}iframe{width:100%;height:100%;border:none;outline:none;display:block;}</style>
+        </head>
+        <body>
+          <iframe src="${url}" allowfullscreen="true" allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; gamepad; microphone; camera; clipboard-write" referrerpolicy="no-referrer"></iframe>
+        </body>
+      </html>
+    `;
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    const win = window.open(blobUrl, '_blank');
+    if (!win) {
+      return openAboutBlank(targetUrl, customTitle, customFavicon);
+    }
+    return true;
+  } catch {
+    return openAboutBlank(targetUrl, customTitle, customFavicon);
   }
 }

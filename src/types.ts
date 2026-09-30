@@ -1,6 +1,6 @@
-export type TabType = 'games' | 'search' | 'settings';
+export type TabType = 'home' | 'games' | 'movies' | 'music' | 'chat' | 'settings' | 'search';
 
-export type GameCategory = 'all' | 'arcade' | 'puzzle' | 'retro' | 'action' | 'casual' | 'favorites';
+export type GameCategory = 'all' | 'fnf' | 'arcade' | 'puzzle' | 'retro' | 'action' | 'casual' | 'favorites';
 
 export interface GameItem {
   id: string;

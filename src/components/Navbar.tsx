@@ -1,21 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { TabType, CloakPreset, ThemeType } from '../types';
+import React, { useState } from 'react';
+import { TabType, CloakPreset } from '../types';
 import {
+  Home,
   Gamepad2,
-  Search,
+  Clapperboard,
+  Music2,
+  MessageSquare,
   Settings,
-  Shield,
   ShieldAlert,
-  Maximize,
-  Minimize,
+  ArrowLeft,
+  ArrowRight,
+  RotateCw,
+  Lock,
+  Plus,
+  X,
   Volume2,
   VolumeX,
+  Maximize,
+  Minimize,
+  Star,
   ExternalLink,
-  Menu,
-  X,
-  GraduationCap
+  GraduationCap,
+  Shield
 } from 'lucide-react';
 import { openAboutBlank } from '../utils/cloakPresets';
+import { playSound } from '../utils/audio';
 
 interface NavbarProps {
   currentTab: TabType;
@@ -26,7 +35,6 @@ interface NavbarProps {
   soundEnabled: boolean;
   onToggleSound: () => void;
   cloakPreset: CloakPreset;
-  theme?: ThemeType;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -36,40 +44,26 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLockEdu,
   panicKey,
   soundEnabled,
-  onToggleSound,
-  theme = 'cyber'
+  onToggleSound
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [omniboxInput, setOmniboxInput] = useState('');
+  const [isEditingUrl, setIsEditingUrl] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
-  // Desktop hover-to-slide rail state
-  const [isHovered, setIsHovered] = useState(false);
-  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleMouseEnter = () => {
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current);
-      hoverTimerRef.current = null;
-    }
-    setIsHovered(true);
+  // Tab mapping for title display
+  const tabTitles: Record<string, string> = {
+    home: 'Home',
+    search: 'Home',
+    games: 'Games Hub',
+    movies: 'Media & Stream',
+    music: 'Spotify Player',
+    chat: 'AI Study Chat',
+    settings: 'Vault Settings'
   };
 
-  const handleMouseLeave = () => {
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current);
-    }
-    hoverTimerRef.current = setTimeout(() => {
-      setIsHovered(false);
-    }, 180);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (hoverTimerRef.current) {
-        clearTimeout(hoverTimerRef.current);
-      }
-    };
-  }, []);
+  const currentTabTitle = tabTitles[currentTab] || 'Home';
+  const displayUrl = `safezone://${currentTab === 'music' ? 'spotify' : currentTab === 'search' ? 'home' : currentTab}`;
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -81,295 +75,305 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const navItems: { id: TabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'games', label: 'Games', icon: <Gamepad2 className="w-5 h-5" /> },
-    { id: 'search', label: 'Search', icon: <Search className="w-5 h-5" /> },
-    { id: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> }
-  ];
+  const handleOmniboxSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = omniboxInput.trim().toLowerCase();
+    setIsEditingUrl(false);
 
-  const getThemeAccentClasses = () => {
-    switch (theme) {
-      case 'galaxy':
-        return {
-          logoBg: 'bg-purple-600 shadow-[0_0_20px_rgba(147,51,234,0.4)]',
-          activeBg: 'bg-purple-600/15 text-purple-400 border-purple-500/30',
-          activeIcon: 'text-purple-400',
-          badgeBg: 'bg-purple-600/20 text-purple-300 border-purple-500/30'
-        };
-      case 'night':
-        return {
-          logoBg: 'bg-sky-500 shadow-[0_0_20px_rgba(14,165,233,0.4)]',
-          activeBg: 'bg-sky-500/15 text-sky-400 border-sky-500/30',
-          activeIcon: 'text-sky-400',
-          badgeBg: 'bg-sky-500/20 text-sky-300 border-sky-500/30'
-        };
-      case 'dark-ops':
-        return {
-          logoBg: 'bg-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.4)]',
-          activeBg: 'bg-indigo-600/15 text-indigo-400 border-indigo-500/30',
-          activeIcon: 'text-indigo-400',
-          badgeBg: 'bg-indigo-600/20 text-indigo-300 border-indigo-500/30'
-        };
-      case 'cyber':
-      default:
-        return {
-          logoBg: 'bg-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.4)]',
-          activeBg: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
-          activeIcon: 'text-cyan-400',
-          badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
-        };
+    if (!clean) return;
+
+    if (clean.includes('game')) {
+      onTabChange('games');
+    } else if (clean.includes('movie') || clean.includes('media')) {
+      onTabChange('movies');
+    } else if (clean.includes('music') || clean.includes('spotify') || clean.includes('song')) {
+      onTabChange('music');
+    } else if (clean.includes('chat') || clean.includes('ai')) {
+      onTabChange('chat');
+    } else if (clean.includes('setting')) {
+      onTabChange('settings');
+    } else if (clean.includes('home')) {
+      onTabChange('home');
+    } else {
+      // Direct Web search
+      window.open(`https://duckduckgo.com/?q=${encodeURIComponent(clean)}`, '_blank', 'noopener,noreferrer');
     }
   };
 
-  const themeClasses = getThemeAccentClasses();
-
   return (
     <>
-      {/* Mobile Top Bar (< md) */}
-      <div className="md:hidden sticky top-0 z-50 bg-[#0a0c16] border-b border-white/5 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${themeClasses.logoBg}`}>
-            <Shield className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-black tracking-tighter text-white">SAFEZONE</span>
-        </div>
+      {/* ============================================================ */}
+      {/* 1. TOP BROWSER CHROME (Safezone Blue Chrome Bar) */}
+      {/* ============================================================ */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-[#060b17] border-b border-blue-500/20 flex flex-col select-none">
+        {/* Top Tab Strip */}
+        <div className="flex items-center justify-between px-3 pt-2 pb-1 gap-2">
+          {/* Active Tab & Add button */}
+          <div className="flex items-center gap-1.5 pl-14 md:pl-16">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-t-xl bg-[#0d1628] border-t border-x border-blue-500/30 text-blue-200 text-xs font-bold shadow-md">
+              <span className="w-4 h-4 rounded bg-blue-500/30 text-blue-300 flex items-center justify-center text-[10px] font-black">
+                {currentTab === 'games' ? 'G' : currentTab === 'movies' ? 'M' : currentTab === 'music' ? '♫' : currentTab === 'chat' ? 'AI' : 'S'}
+              </span>
+              <span className="text-white font-medium">{currentTabTitle}</span>
+              <button
+                onClick={() => onTabChange('home')}
+                className="hover:text-white hover:bg-blue-500/20 rounded p-0.5 ml-1 text-blue-300/60"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
 
-        <div className="flex items-center gap-2">
-          {onLockEdu && (
             <button
-              onClick={onLockEdu}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/30 rounded-lg text-xs font-semibold cursor-pointer active:scale-95"
-              title="Lock to Educational Portal"
+              onClick={() => onTabChange('home')}
+              className="p-1 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition cursor-pointer"
+              title="New Tab (safezone://home)"
             >
-              <GraduationCap className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Edu Lock</span>
+              <Plus className="w-3.5 h-3.5" />
             </button>
-          )}
+          </div>
 
-          {/* Quick Panic Button Mobile */}
-          <button
-            onClick={onPanicTrigger}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-rose-600/90 text-white rounded-lg text-xs font-bold shadow-lg shadow-rose-950/50 cursor-pointer active:scale-95"
-          >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            <span>Panic [{panicKey}]</span>
-          </button>
-
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-300 hover:text-white cursor-pointer"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+          {/* Quick Lock to Edu Camouflage */}
+          <div className="flex items-center gap-2">
+            {onLockEdu && (
+              <button
+                onClick={onLockEdu}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-white text-xs font-semibold cursor-pointer border border-blue-500/30 shadow-sm transition"
+                title="Lock immediately to Educational Portal (Apex Learning Hub)"
+              >
+                <GraduationCap className="w-4 h-4 text-blue-400" />
+                <span className="hidden sm:inline">Exit to Edu Portal</span>
+                <span className="sm:hidden">Edu Lock</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Mobile Dropdown Menu (< md) */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-[#0a0c16] border-b border-white/5 p-4 space-y-2 z-40 relative">
-          <nav className="space-y-1">
-            {navItems.map(item => {
-              const isActive = currentTab === item.id;
-              return (
+        {/* Omnibox & Controls Row */}
+        <div className="flex items-center justify-between px-3 pb-2 gap-2">
+          {/* Left Navigation Buttons */}
+          <div className="flex items-center gap-1 pl-14 md:pl-16 text-slate-400">
+            <button
+              onClick={() => onTabChange('home')}
+              className="p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition cursor-pointer"
+              title="Back"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onTabChange('games')}
+              className="p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition cursor-pointer"
+              title="Forward"
+            >
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                playSound('pop', soundEnabled);
+                window.location.reload();
+              }}
+              className="p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition cursor-pointer"
+              title="Reload"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Center Omnibox Address Bar */}
+          <form onSubmit={handleOmniboxSubmit} className="flex-1 max-w-3xl">
+            <div className="flex items-center bg-[#091120] border border-blue-500/25 hover:border-blue-500/40 focus-within:border-blue-400 rounded-full px-3.5 py-1.5 gap-2 transition-all">
+              <Lock className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+
+              {isEditingUrl ? (
+                <input
+                  type="text"
+                  value={omniboxInput}
+                  onChange={e => setOmniboxInput(e.target.value)}
+                  onBlur={() => setIsEditingUrl(false)}
+                  autoFocus
+                  placeholder="Enter URL or search..."
+                  className="w-full bg-transparent text-xs text-white focus:outline-none font-mono"
+                />
+              ) : (
                 <button
-                  key={item.id}
+                  type="button"
                   onClick={() => {
-                    onTabChange(item.id);
-                    setMobileMenuOpen(false);
+                    setIsEditingUrl(true);
+                    setOmniboxInput(displayUrl);
                   }}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-semibold transition cursor-pointer ${
-                    isActive
-                      ? `${themeClasses.activeBg} font-bold`
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                  }`}
+                  className="w-full text-left font-mono text-xs text-blue-200/90 truncate cursor-text"
                 >
-                  <span className={isActive ? themeClasses.activeIcon : ''}>{item.icon}</span>
-                  <span>{item.label}</span>
+                  {displayUrl}
                 </button>
-              );
-            })}
-          </nav>
-
-          <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={onToggleSound}
-                className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-300"
-              >
-                {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4" />}
-              </button>
-              <button
-                onClick={toggleFullscreen}
-                className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-300"
-              >
-                <Maximize className="w-4 h-4" />
-              </button>
+              )}
             </div>
+          </form>
 
-            <button
-              onClick={() => openAboutBlank()}
-              className="px-3 py-1.5 bg-white/5 border border-white/10 text-slate-300 hover:text-white rounded-lg font-medium flex items-center gap-1.5"
-            >
-              <ExternalLink className="w-3.5 h-3.5" /> About:Blank
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Desktop Layout Spacer for Rail */}
-      <div className="hidden md:block w-[72px] shrink-0 transition-all duration-300" />
-
-      {/* Immersive Hover-Slide Rail Navigation Desktop (>= md) */}
-      <aside
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={`hidden md:flex flex-col select-none z-40 h-screen top-0 fixed left-0 bg-[#0a0c16]/95 backdrop-blur-2xl border-r transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isHovered
-            ? 'w-64 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.85)]'
-            : 'w-[72px] border-white/5'
-        }`}
-      >
-        <div className="p-4 pb-3">
-          {/* Brand Logo & Title */}
-          <div
-            onClick={() => onTabChange('games')}
-            className="flex items-center gap-3 cursor-pointer group overflow-hidden mb-6"
-          >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${themeClasses.logoBg}`}>
-              <Shield className="w-5 h-5 text-white stroke-[2.5]" />
-            </div>
-            {isHovered && (
-              <div className="whitespace-nowrap transition-opacity duration-200">
-                <span className="text-xl font-black tracking-tighter text-white block leading-none">
-                  SAFEZONE
-                </span>
-                <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold block mt-1">
-                  Unblocked Vault
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="space-y-1.5">
-            {navItems.map(item => {
-              const isActive = currentTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onTabChange(item.id)}
-                  className={`w-full flex items-center rounded-xl cursor-pointer transition-all ${
-                    isHovered ? 'gap-3.5 px-3.5 py-2.5' : 'justify-center p-3'
-                  } ${
-                    isActive
-                      ? `${themeClasses.activeBg} font-bold shadow-[0_0_15px_rgba(0,0,0,0.3)]`
-                      : 'text-slate-400 hover:text-white hover:bg-white/[0.04] font-medium border border-transparent'
-                  }`}
-                  title={item.label}
-                >
-                  <span className={`shrink-0 ${isActive ? themeClasses.activeIcon : 'text-slate-400'}`}>
-                    {item.icon}
-                  </span>
-                  {isHovered && (
-                    <span className="text-sm tracking-wide whitespace-nowrap overflow-hidden text-left">
-                      {item.label}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Quick Tools Tray */}
-        <div
-          className={`px-3 py-2 flex items-center border-t border-white/5 mx-1 pt-3 ${
-            !isHovered ? 'flex-col gap-2' : 'justify-between gap-1.5'
-          }`}
-        >
-          <button
-            onClick={() => openAboutBlank()}
-            className={`bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition cursor-pointer ${
-              !isHovered ? 'w-10 h-10 p-2' : 'flex-1 py-1.5 px-2'
-            }`}
-            title="Open in about:blank cloaked tab"
-          >
-            <ExternalLink className="w-4 h-4 text-indigo-400 shrink-0" />
-            {isHovered && (
-              <span className="text-[11px] whitespace-nowrap">Cloaked</span>
-            )}
-          </button>
-
-          <div className={`flex items-center ${!isHovered ? 'flex-col gap-2' : 'gap-1.5'}`}>
-            <button
+          {/* Right Utility Widgets (Media, Bookmark, Cloak, Fullscreen) */}
+          <div className="flex items-center gap-1.5 text-slate-400">
+            {/* Audio Synth Status */}
+            <div
               onClick={onToggleSound}
-              className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/5 rounded-lg transition cursor-pointer"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#091120] border border-blue-500/20 text-[11px] text-blue-200/80 hover:text-white cursor-pointer"
               title={soundEnabled ? 'Mute 8-bit sound' : 'Unmute sound'}
             >
-              {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+              {soundEnabled ? (
+                <Volume2 className="w-3.5 h-3.5 text-blue-400" />
+              ) : (
+                <VolumeX className="w-3.5 h-3.5 text-slate-500" />
+              )}
+              <span>{soundEnabled ? '8-Bit Synth ON' : 'Audio Muted'}</span>
+            </div>
+
+            {/* Bookmark Star */}
+            <button
+              onClick={() => {
+                setIsBookmarked(b => !b);
+                playSound('score', soundEnabled);
+              }}
+              className={`p-1.5 rounded-lg hover:bg-white/5 transition cursor-pointer ${
+                isBookmarked ? 'text-blue-400' : 'hover:text-white'
+              }`}
+              title="Bookmark this page"
+            >
+              <Star className="w-4 h-4 fill-current" />
             </button>
 
+            {/* Cloak About:Blank */}
+            <button
+              onClick={() => openAboutBlank()}
+              className="hidden sm:block p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition cursor-pointer"
+              title="Open inside unblocked about:blank tab"
+            >
+              <ExternalLink className="w-4 h-4 text-blue-400" />
+            </button>
+
+            {/* Fullscreen Button */}
             <button
               onClick={toggleFullscreen}
-              className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/5 rounded-lg transition cursor-pointer"
-              title="Toggle fullscreen mode"
+              className="p-1.5 rounded-lg hover:bg-white/5 hover:text-white transition cursor-pointer"
+              title="Toggle Fullscreen"
             >
               {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Bottom Status & Panic Box */}
-        <div className="mt-auto p-3 space-y-2.5">
-          {/* Quick Lock to Educational Camouflage Cover */}
+      {/* ============================================================ */}
+      {/* 2. LEFT VERTICAL ICON RAIL / DOCK (Safezone Blue Left Rail) */}
+      {/* ============================================================ */}
+      <aside className="fixed left-0 top-0 bottom-0 w-14 md:w-16 z-50 bg-[#050a15] border-r border-blue-500/20 flex flex-col items-center justify-between py-4 select-none">
+        {/* Top App Icons */}
+        <div className="flex flex-col items-center gap-3 w-full">
+          {/* Safezone Brand Badge */}
+          <div
+            onClick={() => onTabChange('home')}
+            className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-blue-600/40 cursor-pointer mb-2 transition hover:scale-105"
+            title="Safezone"
+          >
+            <Shield className="w-5 h-5 text-white" />
+          </div>
+
+          {/* Home Icon */}
+          <button
+            onClick={() => onTabChange('home')}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              currentTab === 'home' || currentTab === 'search'
+                ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-105'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            title="Safezone Home & Search"
+          >
+            <Home className="w-5 h-5" />
+          </button>
+
+          {/* Games Icon */}
+          <button
+            onClick={() => onTabChange('games')}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              currentTab === 'games'
+                ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-105'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            title="Games (Friday Night Funkin, Retro Bowl, etc.)"
+          >
+            <Gamepad2 className="w-5 h-5" />
+          </button>
+
+          {/* Movies / Streaming Icon */}
+          <button
+            onClick={() => onTabChange('movies')}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              currentTab === 'movies'
+                ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-105'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            title="Media & Streaming"
+          >
+            <Clapperboard className="w-5 h-5" />
+          </button>
+
+          {/* Music Icon */}
+          <button
+            onClick={() => onTabChange('music')}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              currentTab === 'music'
+                ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-105'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            title="Spotify Web Player (Unblocked)"
+          >
+            <Music2 className="w-5 h-5" />
+          </button>
+
+          {/* Chat / AI Icon */}
+          <button
+            onClick={() => onTabChange('chat')}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              currentTab === 'chat'
+                ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-105'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            title="AI Study Assistant"
+          >
+            <MessageSquare className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Bottom Utility Icons */}
+        <div className="flex flex-col items-center gap-3 w-full">
+          {/* Edu Portal Lock */}
           {onLockEdu && (
             <button
               onClick={onLockEdu}
-              className={`w-full flex items-center justify-center gap-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl font-semibold transition cursor-pointer active:scale-95 ${
-                isHovered ? 'p-2.5 text-xs' : 'p-3'
-              }`}
-              title="Lock & disguise as Educational Portal"
+              className="w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-blue-600/30 text-blue-300 hover:text-white flex items-center justify-center transition cursor-pointer border border-blue-500/20"
+              title="Return to Educational Portal (Apex Learning Hub)"
             >
-              <GraduationCap className="w-5 h-5 shrink-0 text-indigo-400" />
-              {isHovered && (
-                <span className="whitespace-nowrap text-xs font-bold">Lock to Edu Portal</span>
-              )}
+              <GraduationCap className="w-5 h-5" />
             </button>
           )}
+
+          {/* Settings Icon */}
+          <button
+            onClick={() => onTabChange('settings')}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+              currentTab === 'settings'
+                ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-105'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            title="Safezone Settings & Google Sites Code"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
 
           {/* Emergency Panic Button */}
           <button
             onClick={onPanicTrigger}
-            className={`w-full flex items-center justify-center gap-2 bg-rose-600/90 hover:bg-rose-500 text-white rounded-xl font-bold shadow-lg shadow-rose-950/40 transition cursor-pointer active:scale-95 animate-pulse ${
-              isHovered ? 'p-2.5 text-xs' : 'p-3'
-            }`}
-            title={`Trigger instant panic disguise (Key: '${panicKey}')`}
+            className="w-10 h-10 rounded-xl bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-950/60 transition cursor-pointer active:scale-95 animate-pulse"
+            title={`Emergency Panic Disguise [${panicKey}]`}
           >
-            <ShieldAlert className="w-5 h-5 shrink-0" />
-            {isHovered && (
-              <span className="whitespace-nowrap text-xs">Panic Hotkey [{panicKey}]</span>
-            )}
+            <ShieldAlert className="w-5 h-5" />
           </button>
-
-          {/* Proxy Status */}
-          {isHovered ? (
-            <div className="p-3 rounded-xl bg-gradient-to-br from-slate-900 to-black border border-white/5">
-              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1 font-mono">
-                Proxy Status
-              </p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-bold text-emerald-400 font-mono">CONNECTED</span>
-                </div>
-                <span className="text-[10px] text-slate-500 font-mono">STEALTH</span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex justify-center py-1" title="Proxy: Connected (Stealth)">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
-            </div>
-          )}
         </div>
       </aside>
     </>

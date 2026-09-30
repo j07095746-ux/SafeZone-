@@ -99,7 +99,7 @@ const PRESET_PORTALS = [
     name: 'Khan Academy Courses',
     desc: 'Master courses in biology, chemistry, computer science, and calculus.',
     url: 'https://www.khanacademy.org',
-    icon: <BookOpen className="w-5 h-5 text-rose-400" />,
+    icon: <BookOpen className="w-5 h-5 text-blue-400" />,
     badge: 'Education'
   }
 ];
@@ -226,7 +226,7 @@ export const SearchTab: React.FC<SearchTabProps> = ({ soundEnabled }) => {
               </button>
               <button
                 onClick={() => setActiveFrameUrl(null)}
-                className="p-1.5 text-slate-400 hover:text-rose-400 cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-blue-400 cursor-pointer"
               >
                 Close
               </button>
